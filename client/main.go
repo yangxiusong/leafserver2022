@@ -30,9 +30,11 @@ func main() {
 	wg.Wait()
 }
 
+//读取服务端返回信息并输出，增加对粘包的处理
 func readMsg(conn net.Conn, wg *sync.WaitGroup) {
 	reader := bufio.NewReader(conn)
 	for {
+		//前2个字节表示数据长度
 		peek, err := reader.Peek(2)
 		if err != nil {
 			// log.Debug("peek err:%s", err)
@@ -40,6 +42,7 @@ func readMsg(conn net.Conn, wg *sync.WaitGroup) {
 		}
 		log.Debug("peek:%v\n", peek)
 		buffer := bytes.NewBuffer(peek)
+		//读取实际数据的长度
 		var length uint16
 		err = binary.Read(buffer, binary.BigEndian, &length)
 		if err != nil {
@@ -47,10 +50,11 @@ func readMsg(conn net.Conn, wg *sync.WaitGroup) {
 			continue
 		}
 		log.Debug("length:%d", length)
+		//Buffered 返回缓存中未读取的数据长度，如果缓存区的数据小于总长度，则意味着数据不完整
 		if int32(reader.Buffered()) < int32(int(length))+2 {
-			log.Debug("bufM:%+v", err)
 			continue
 		}
+		//从缓存区读取大小为实际数据长度的数据到data中
 		data := make([]byte, length+2)
 		_, err = reader.Read(data)
 		if err != nil {
@@ -59,6 +63,7 @@ func readMsg(conn net.Conn, wg *sync.WaitGroup) {
 		}
 
 		// fmt.Printf("receive data:%+v \n", data[2:])
+		//解析实际的数据
 		var jdata interface{}
 		err = json.Unmarshal(data[2:], &jdata)
 		if err != nil {
@@ -67,7 +72,6 @@ func readMsg(conn net.Conn, wg *sync.WaitGroup) {
 		}
 		fmt.Printf("receive jdata ==>  %+v\n", jdata)
 		wg.Done()
-
 	}
 }
 
