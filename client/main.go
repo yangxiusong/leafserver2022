@@ -12,10 +12,6 @@ import (
 	"github.com/name5566/leaf/log"
 )
 
-var readLen int
-var bufReadLen int
-var buf []byte
-
 func main() {
 	conn, err := net.Dial("tcp", "127.0.0.1:3563")
 	if err != nil {
